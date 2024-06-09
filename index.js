@@ -36,6 +36,16 @@ async function run() {
             res.send(result);
         });
 
+        // app.get('/users', async(req, res) => {
+        //     const role = req.query.role;
+        //     const query = {role: role};
+        //     console.log('query: ', query)
+        //     const result = await usersCollection.find(query).toArray();
+        //     res.send(result);
+        // })
+
+
+
 
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -50,19 +60,8 @@ async function run() {
         });
 
 
-        app.patch('/users/admin/:id', async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) };
-            const updatedDoc = {
-                $set: {
-                    role: 'admin'
-                }
-            };
-
-            const result = await usersCollection.updateOne(filter, updatedDoc);
-            res.send(result);
-        })
-
+       
+        
 
         app.delete('/users/:id', async (req, res) => {
             const id = req.params.id;
@@ -75,12 +74,21 @@ async function run() {
         // ------------------------ Parcels --------------------------
 
         app.get('/parcels', async (req, res) => {
+
+            const result = await parcelsCollection.find().toArray();
+            res.send(result)
+        });
+
+
+        app.get('/parcel/:email', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
-            console.log("query: ", query)
+            // console.log("query: ", query)
             const result = await parcelsCollection.find(query).toArray();
             res.send(result)
         });
+
+
 
         app.get('/parcel/:id', async (req, res) => {
             const id = req.params.id;
