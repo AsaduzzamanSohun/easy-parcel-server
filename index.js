@@ -76,16 +76,46 @@ async function run() {
 
         app.get('/parcels', async (req, res) => {
             const email = req.query.email;
-            const query = {email: email}
+            const query = { email: email }
             console.log("query: ", query)
             const result = await parcelsCollection.find(query).toArray();
             res.send(result)
+        });
+
+        app.get('/parcel/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            console.log('id: ', query)
+            const result = await parcelsCollection.findOne(query);
+            res.send(result);
         });
 
         app.post('/parcels', async (req, res) => {
             const parcel = req.body;
             const result = await parcelsCollection.insertOne(parcel);
             res.send(result);
+        });
+
+        app.patch('/parcel/:id', async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    ...item
+                }
+            }
+            const result = await parcelsCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+
+
+        });
+
+        app.delete('/parcels/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await parcelsCollection.deleteOne(query);
+            res.send(result)
         });
 
 
