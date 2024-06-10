@@ -41,7 +41,7 @@ async function run() {
         });
 
 
-        // middlewares
+        // middlewares verift  token
         const verifyToken = (req, res, next) => {
             console.log('Inside verify token: ', req.headers.authorization);
 
@@ -56,26 +56,31 @@ async function run() {
                 req.decoded = decoded;
                 next();
             })
+        };
+
+
+        // verify admin (reminder: verify admin will apply after the token verification)
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const isAdmin = user?.role === 'admin';
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'Forbidden Access' });
+            }
+            next();
         }
 
 
-
         // users related api
-        app.get('/users', verifyToken, async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
 
-        // app.get('/users', async(req, res) => {
-        //     const role = req.query.role;
-        //     const query = {role: role};
-        //     console.log('query: ', query)
-        //     const result = await usersCollection.find(query).toArray();
-        //     res.send(result);
-        // })
-
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
+
             if (email !== req.decoded.email) {
                 return res.status(403).send({ message: 'Forbidden Access' });
             }
@@ -104,7 +109,7 @@ async function run() {
 
 
         // Make User to Admin
-        app.patch('/users/admin/:id', async (req, res) => {
+        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -118,7 +123,7 @@ async function run() {
 
 
         // Make User to Deliveryman
-        app.patch('/users/deliverer/:id', async (req, res) => {
+        app.patch('/users/deliverer/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -135,7 +140,7 @@ async function run() {
 
 
 
-        app.delete('/users/:id', async (req, res) => {
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.deleteOne(query);
