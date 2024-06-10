@@ -30,7 +30,8 @@ async function run() {
         // await client.connect();
 
         const usersCollection = client.db('easy-parcelDB').collection('users');
-        const parcelsCollection = client.db('easy-parcelDB').collection('parcels')
+        const parcelsCollection = client.db('easy-parcelDB').collection('parcels');
+        const paymentCollection = client.db("easy-parcelDB").collection('payments')
 
 
 
@@ -206,6 +207,30 @@ async function run() {
         });
 
 
+        // Search API from Back-end
+        app.get('/parcels/search', verifyToken, verifyAdmin, async (req, res) => {
+            const { from, to } = req.query;
+            if (!from || !to) {
+                return res.status(400).send({ message: 'Both from and to dates are required' });
+            }
+
+            const fromDate = new Date(from);
+            const toDate = new Date(to);
+
+            try {
+                const parcels = await parcelsCollection.find({
+                    requestedDeliveryDate: {
+                        $gte: fromDate,
+                        $lte: toDate
+                    }
+                }).toArray();
+                res.send(parcels);
+            } catch (error) {
+                console.error('Cannot load parcel by dates', error);
+                res.status(500).send({ message: 'Server has been turn off' });
+            }
+        });
+
 
 
         // Payment Intent
@@ -213,19 +238,101 @@ async function run() {
             const { price } = req.body;
             const amount = parseInt(price * 100);
             console.log("amount", amount)
-        
+
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: 'usd',
                 payment_method_types: ['card']
             });
-        
+
             res.send({
                 clientSecret: paymentIntent.client_secret
             });
         });
 
         // console.log(process.env.PAYMENT_SECRET_KEY)
+
+        // --------------------- Payment Gateway ---------------------
+        app.get('/payments/:email', verifyToken, async (req, res) => {
+            const query = { email: req.params.email }
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'Forbidden Access' });
+            }
+            const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        })
+
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const paymentResult = await paymentCollection.insertOne(payment);
+
+            //  carefully delete each item from the cart
+            console.log('payment info', payment);
+            const query = {
+                _id: {
+                    $in: payment.parcelIds.map(id => new ObjectId(id))
+                }
+            };
+
+            const deleteResult = await cartCollection.deleteMany(query);
+
+            res.send({ paymentResult, deleteResult });
+        });
+
+        // Get admin stats
+        app.get('/admin-stats', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const usersCount = await userCollection.estimatedDocumentCount();
+                const parcelItemsCount = await parcelItemCollection.estimatedDocumentCount();
+                const parcelsCount = await parcelsCollection.estimatedDocumentCount();
+                const deliveredParcelsCount = await parcelsCollection.countDocuments({ status: 'delivered' });
+
+                const revenueResult = await paymentCollection.aggregate([
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: { $sum: '$price' }
+                        }
+                    }
+                ]).toArray();
+                const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+                res.json({
+                    usersCount,
+                    parcelItemsCount,
+                    parcelsCount,
+                    deliveredParcelsCount,
+                    totalRevenue
+                });
+            } catch (error) {
+                console.error('Error fetching admin stats:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
+
+        // Get booking stats
+        app.get('/booking-stats', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const result = await bookingCollection.aggregate([
+                    { $match: { status: { $in: ['booked', 'delivered'] } } },
+                    {
+                        $group: {
+                            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                            bookedCount: { $sum: { $cond: [{ $eq: ['$status', 'booked'] }, 1, 0] } },
+                            deliveredCount: { $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] } }
+                        }
+                    },
+                    { $sort: { _id: 1 } }
+                ]).toArray();
+
+                res.json(result);
+            } catch (error) {
+                console.error('Error fetching booking stats:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
+
 
 
 
