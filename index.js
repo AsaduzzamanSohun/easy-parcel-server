@@ -278,6 +278,12 @@ async function run() {
         // ----------------------------------------- Approved Rest Apis ----------------------------------------------------- //
         // ------------------------------------------------------------------------------------------------------------------ //
 
+
+        app.get('/approved', verifyToken, verifyAdmin, verifyDeliverer, async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
+
         app.post('/approved', async (req, res) => {
             const approved = req.body;
             const result = await approvedCollection.insertOne(approved);
@@ -286,15 +292,15 @@ async function run() {
 
 
         // Make User to Admin
-        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) };
-            const updatedDoc = {
-                $set: { role: 'admin' }
-            };
-            const result = await usersCollection.updateOne(filter, updatedDoc);
-            res.send(result);
-        });
+        // app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: new ObjectId(id) };
+        //     const updatedDoc = {
+        //         $set: { role: 'admin' }
+        //     };
+        //     const result = await usersCollection.updateOne(filter, updatedDoc);
+        //     res.send(result);
+        // });
 
 
 
