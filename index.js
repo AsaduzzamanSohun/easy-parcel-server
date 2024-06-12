@@ -7,8 +7,12 @@ const port = process.env.PORT || 9000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 
-app.use(cors({ origin: ["http://localhost:5173", 
-"https://easy-parcel-49c01.web.app", "https://easy-parcel-49c01.firebaseapp.com/"] }));
+app.use(cors({
+    origin: ["http://localhost:5173",
+        "https://easy-parcel-49c01.web.app",
+        "https://easy-parcel-49c01.firebaseapp.com",
+        "https://cosmic-quokka-d7fc3e.netlify.app"]
+}));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.k7dzav4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
