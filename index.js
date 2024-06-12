@@ -7,7 +7,8 @@ const port = process.env.PORT || 9000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: ["http://localhost:5173", 
+"https://easy-parcel-49c01.web.app", "https://easy-parcel-49c01.firebaseapp.com/"] }));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.k7dzav4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -24,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server (uncomment this line)
-        await client.connect();
+        // await client.connect();
 
         const usersCollection = client.db('easy-parcelDB').collection('users');
         const parcelsCollection = client.db('easy-parcelDB').collection('parcels');
