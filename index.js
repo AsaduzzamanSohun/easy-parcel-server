@@ -174,7 +174,7 @@ async function run() {
         });
 
         // Make User to Deliveryman
-        app.patch('/users/deliverer/:id', verifyToken, verifyDeliverer, async (req, res) => {
+        app.patch('/users/deliverer/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -234,11 +234,27 @@ async function run() {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
-                $set: { ...item }
+                $set: { ...item, deliveryman_name }
             };
             const result = await parcelsCollection.updateOne(filter, updatedDoc);
             res.send(result);
         });
+
+        // app.patch('/parcel/:email', async (req, res) => {
+
+        //     const email = req.params.email;
+        //     const filter = { email: email };
+        //     const updatedDoc = {
+        //         $set: {
+        //             delivery_man
+        //         }
+        //     }
+
+        //     const result = await parcelsCollection.updateOne(filter, updatedDoc);
+        //     res.send(result);
+
+        // });
+
 
         app.delete('/parcels/:id', async (req, res) => {
             const id = req.params.id;
@@ -277,40 +293,6 @@ async function run() {
 
 
 
-
-        // ------------------------------------------------------------------------------------------------------------------ //
-        // ----------------------------------------- Approved Rest Apis ----------------------------------------------------- //
-        // ------------------------------------------------------------------------------------------------------------------ //
-
-
-        app.get('/approved', verifyToken, verifyAdmin, verifyDeliverer, async (req, res) => {
-            const result = await usersCollection.find().toArray();
-            res.send(result);
-        });
-
-        app.post('/approved', async (req, res) => {
-            const approved = req.body;
-            const result = await approvedCollection.insertOne(approved);
-            res.send(result);
-        })
-
-
-        // Make User to Admin
-        // app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: new ObjectId(id) };
-        //     const updatedDoc = {
-        //         $set: { role: 'admin' }
-        //     };
-        //     const result = await usersCollection.updateOne(filter, updatedDoc);
-        //     res.send(result);
-        // });
-
-
-
-
-
-
         // ------------------------------------------------------------------------------------------------------------------ //
         // ------------------------------------------ Payment Rest Apis ----------------------------------------------------- //
         // ------------------------------------------------------------------------------------------------------------------ //
@@ -331,6 +313,11 @@ async function run() {
         });
 
         // Payment API
+        app.get('/payments', async (req, res) => {
+            const result = await paymentCollection.find().toArray();
+            res.send(result);
+        })
+
         app.get('/payments/:email', verifyToken, async (req, res) => {
             const query = { email: req.params.email };
             if (req.params.email !== req.decoded.email) {
@@ -353,6 +340,116 @@ async function run() {
 
             res.status(200).send({ result, deleteResult });
         });
+
+        // app.patch('/payments/:id', verifyToken, verifyAdmin, async (req, res) => {
+        //     const item = req.body
+        //     const id = req.params.id;
+        //     const deliveryman_name = item.deliveryman_name;
+        //     const filter = { _id: new ObjectId(id) };
+        //     const updatedDoc = {
+        //         $set: {
+        //             ...item,
+        //             status: 'On the Way',
+        //             deliveryman_name
+        //         }
+        //     };
+        //     const result = await paymentCollection.updateOne(filter, updatedDoc);
+        //     res.send(result);
+        // });
+
+
+        app.patch('/payments/:id', verifyToken, async (req, res) => {
+            const item = req.body
+            console.log(item);
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const deliveryman_name = item.deliveryman_name;
+            const status = item.status
+            const updatedDoc = {
+                $set: {
+                    ...item,
+                    status,
+                    deliveryman_name
+                }
+            };
+
+            console.log(updatedDoc);
+            console.log(item);
+            const result = await paymentCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        });
+
+     
+
+        app.delete('/payments/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await paymentCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+
+
+
+
+
+
+
+
+        // ------------------------------------------------------------------------------------------------------------------ //
+        // ----------------------------------------- Approved Rest Apis ----------------------------------------------------- //
+        // ------------------------------------------------------------------------------------------------------------------ //
+
+
+        app.get('/approved', async (req, res) => {
+            const result = await approvedCollection.find().toArray();
+            res.send(result);
+        });
+
+        app.patch('/approved/:id', verifyToken, verifyDeliverer, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: "Delivered"
+                }
+            }
+            const result = await approvedCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        });
+
+        app.post('/approved', async (req, res) => {
+            const approved = req.body;
+            const result = await approvedCollection.insertOne(approved);
+            res.send(result);
+        });
+
+        app.delete('/approved/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await approvedCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+        // Make User to Admin
+        // app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: new ObjectId(id) };
+        //     const updatedDoc = {
+        //         $set: { role: 'admin' }
+        //     };
+        //     const result = await usersCollection.updateOne(filter, updatedDoc);
+        //     res.send(result);
+        // });
+
+
+
+
+
+
 
 
         // ------------------------------------------------------------------------------------------------------------------ //
